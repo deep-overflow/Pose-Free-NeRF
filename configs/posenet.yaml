@@ -1,0 +1,27 @@
+dataset:
+  description: Synthetic Dataset
+  path: #path to dataset
+  batch: #number of batches to use
+  num_workers: #numworkers
+
+model:
+  task: Pose Estimation
+  type: 'Encoder & Decoder'
+  Encoder_parameters:
+    num_conv_blocks: 3
+    num_att_blocks: 5
+    pos_start_octave: 0
+  Decoder_parameters:
+    num_conv_blocks: 4
+    num_att_blocks: 3
+
+
+train:
+  description: PoseNet
+  id: Synthetic Dataset
+  Epoch: #add training details
+  Learning_Rate: #add training details
+
+wandb:
+  project: Training Pose Network with NeRF Synthetic Dataset
+  entity: # add wandb entity
