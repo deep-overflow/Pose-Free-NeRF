@@ -30,12 +30,17 @@ class ImprovedSRTEncoder(nn.Module):
     """
     Scene Representation Transformer Encoder with the improvements from Appendix A.4 in the OSRT paper.
     """
-    def __init__(self, num_conv_blocks=3, num_att_blocks=5, pos_start_octave=0):
-        super().__init__()
-        self.ray_encoder = RayEncoder(pos_octaves=15, pos_start_octave=pos_start_octave,
-                                      ray_octaves=15)
 
-        conv_blocks = [SRTConvBlock(idim=183, hdim=96)]
+    def __init__(self, num_conv_blocks=3, num_att_blocks=5, pos_start_octave=0, image_size=800, pose_embedding=True):
+        super().__init__()
+        if pose_embedding:
+            self.ray_encoder = RayEncoder(pos_octaves=15, pos_start_octave=pos_start_octave,
+                                          ray_octaves=15)
+            conv_blocks = [SRTConvBlock(idim=183, hdim=96)]
+        else:
+            self.ray_encoder = None
+            conv_blocks = [SRTConvBlock(idim=3, hdim=96)]
+
         cur_hdim = 192
         for i in range(1, num_conv_blocks):
             conv_blocks.append(SRTConvBlock(idim=cur_hdim, odim=None))
@@ -44,6 +49,13 @@ class ImprovedSRTEncoder(nn.Module):
         self.conv_blocks = nn.Sequential(*conv_blocks)
 
         self.per_patch_linear = nn.Conv2d(cur_hdim, 768, kernel_size=1)
+
+        feature_map_size = int(image_size / 2 ** num_conv_blocks)
+        # Original SRT initializes with stddev=1/math.sqrt(d).
+        embedding_stdev = (1. / math.sqrt(768))
+        self.pixel_embedding = nn.Parameter(torch.randn(1, 768, feature_map_size, feature_map_size) * embedding_stdev)
+        self.first_image_embedding = nn.Parameter(torch.randn(1, 1, 768) * embedding_stdev)
+        self.non_first_image_embedding = nn.Parameter(torch.randn(1, 1, 768) * embedding_stdev)
 
         self.transformer = Transformer(768, depth=num_att_blocks, heads=12, dim_head=64,
                                        mlp_dim=1536, selfatt=True)
@@ -64,11 +76,21 @@ class ImprovedSRTEncoder(nn.Module):
         camera_pos = camera_pos.flatten(0, 1)
         rays = rays.flatten(0, 1)
 
-        ray_enc = self.ray_encoder(camera_pos, rays)
-        x = torch.cat((x, ray_enc), 1)
+        image_idxs = torch.zeros(batch_size, num_images)
+        image_idxs[:, 0] = 1
+        image_idxs = image_idxs.flatten(0, 1).unsqueeze(-1).unsqueeze(-1).to(x)
+        image_embedding = image_idxs * self.first_image_embedding + \
+                          (1. - image_idxs) * self.non_first_image_embedding
+
+        if self.ray_encoder is not None:
+            ray_enc = self.ray_encoder(camera_pos, rays)
+            x = torch.cat((x, ray_enc), 1)
+
         x = self.conv_blocks(x)
         x = self.per_patch_linear(x)
+        x = x + self.pixel_embedding
         x = x.flatten(2, 3).permute(0, 2, 1)
+        x = x + image_embedding
 
         patches_per_image, channels_per_patch = x.shape[1:]
         x = x.reshape(batch_size, num_images * patches_per_image, channels_per_patch)

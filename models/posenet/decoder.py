@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from models.posenet.layers import Transformer
+from models.posenet.layers import DecoderTransformer
 
 import math
 
@@ -38,8 +38,9 @@ class PoseNet(nn.Module):
 
         self.conv_blocks = nn.Sequential(*conv_blocks)
         self.per_patch_linear = nn.Conv2d(cur_hdim, 768, kernel_size=1)
-        self.transformer = Transformer(768, depth=num_att_blocks, heads=12, dim_head=64,
-                                       mlp_dim=1536, selfatt=False,kv_dim=768)
+        self.transformer = DecoderTransformer(768, depth=num_att_blocks, heads=12, dim_head=64,
+                                       mlp_dim=1536, kv_dim=768)
+        self.pose_estimate_mlp = nn.Linear(768,12)
 
     def forward(self,SLSR,images):
         """
@@ -61,3 +62,13 @@ class PoseNet(nn.Module):
         x = x.reshape(batch_size, num_images * patches_per_image, channels_per_patch)
 
         x = self.transformer(x,z=SLSR)
+
+        #Apply average pooling to patches that belong to the same image.
+        result = torch.zeros(batch_size, num_images, channels_per_patch)
+        for i in range(0,batch_size):
+            for j in range(0,num_images):
+                tmp = x[i,j*patches_per_image:(j+1)*patches_per_image,:]
+                result[i,j,:] = torch.mean(tmp,0)
+
+        result = self.pose_estimate_mlp(result).view(batch_size,num_images,3,4)
+        return result

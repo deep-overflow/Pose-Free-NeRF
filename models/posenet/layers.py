@@ -141,4 +141,24 @@ class Transformer(nn.Module):
             x = attn(x, z=z) + x
             x = ff(x) + x
         return x
-    
+
+
+class DecoderTransformer(nn.Module):
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout=0., kv_dim=None):
+        super().__init__()
+        self.layers = nn.ModuleList([])
+        for _ in range(depth):
+            self.layers.append(nn.ModuleList([
+                PreNorm(dim, Attention(dim, heads=heads, dim_head=dim_head,
+                                       dropout=dropout, selfatt=False, kv_dim=kv_dim)),
+                PreNorm(dim, Attention(dim, heads=heads, dim_head=dim_head,
+                                       dropout=dropout, selfatt=True, kv_dim=kv_dim)),
+                PreNorm(dim, FeedForward(dim, mlp_dim, dropout=dropout))
+            ]))
+
+    def forward(self, x, z=None):
+        for attn1,attn2, ff in self.layers:
+            x = attn1(x, z=z) + x
+            x = attn2(x, z=None) + x
+            x = ff(x) + x
+        return x

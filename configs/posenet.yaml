@@ -11,6 +11,8 @@ model:
     num_conv_blocks: 3
     num_att_blocks: 5
     pos_start_octave: 0
+    image_size: 800 # size of input images ( Ex. Synthetic : 800 x 800 )
+    pose_embedding: False # Additional Embedding of image poses. True in SRT False in RUST.
   Decoder_parameters:
     num_conv_blocks: 4
     num_att_blocks: 3

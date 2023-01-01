@@ -11,7 +11,8 @@ def get_model(configs):
     # assign the requested model to variable 'model'
     model = PoseNetwork(
         configs['Encoder_parameters']['num_conv_blocks'],configs['Encoder_parameters']['num_att_blocks'],
-        configs['Encoder_parameters']['pos_start_octave'],configs['Decoder_parameters']['num_conv_blocks'],
+        configs['Encoder_parameters']['pos_start_octave'],configs['Encoder_parameters']['image_size'],
+        configs['Encoder_parameters']['pose_embedding'],configs['Decoder_parameters']['num_conv_blocks'],
         configs['Decoder_parameters']['num_att_blocks']
     )
     if model is not None:
