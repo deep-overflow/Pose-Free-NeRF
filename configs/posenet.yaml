@@ -1,8 +1,9 @@
 dataset:
-  description: Synthetic Dataset
-  path: #path to dataset
-  batch: #number of batches to use
-  num_workers: #numworkers
+  description: Blender_Dataset
+  path: '../NeRF-Factory/data/blender'
+  scene_name: 'chair'
+  batch: 10 #batch size
+  num_workers: 16 #numworkers
 
 model:
   task: Pose Estimation
@@ -17,13 +18,12 @@ model:
     num_conv_blocks: 4
     num_att_blocks: 3
 
-
 train:
   description: PoseNet
   id: Synthetic Dataset
-  Epoch: #add training details
-  Learning_Rate: #add training details
+  Epoch: 4000000
+  Learning_Rate: 1e-4
 
 wandb:
-  project: Training Pose Network with NeRF Synthetic Dataset
-  entity: # add wandb entity
+  project: Training Pose Network with NeRF Synthetic Dataset_onS
+  entity: jwjung

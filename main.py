@@ -15,7 +15,7 @@ configs = read_config(sys.argv)
 dl = get_dataloader(configs['dataset'])
 model = get_model(configs['model'])
 # Delete # to use wandb
-# start_wandb.set_wandb(model,configs['wandb'],configs['train'],configs['dataset'])
+start_wandb.set_wandb(model,configs['wandb'],configs['train'],configs['dataset'])
 trainer = get_trainer(dl=dl,model=model,configs=configs['train'])
 trainer.run()
 
