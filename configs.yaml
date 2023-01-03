@@ -1,0 +1,12 @@
+dataset:
+  root: 'data'
+  use_all_categories: False
+  category_name: 'apple'
+
+  batch_size: 64
+  n_nearby_inputs: 3
+  n_sample_per_sequence: 100
+  transforms:
+    size: 1000
+    img_h: 1000
+    img_w: 1000
